@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Biblioteca</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>📚 Sistema de Biblioteca</h1>
+    
+    <!-- Sección Libros -->
+    <div class="section" id="libros">
+        <h2>Gestión de Libros</h2>
+        <!-- Formulario para agregar libros -->
+        <div class="form-group">
+            <input type="text" id="nuevoLibroTitulo" placeholder="Título">
+            <input type="text" id="nuevoLibroAutor" placeholder="Autor">
+            <input type="number" id="nuevoLibroAño" placeholder="Año">
+            <button onclick="agregarNuevoLibro()">Agregar Libro</button>
+        </div>
+        
+        <table id="tablaLibros">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Año</th>
+                    <th>Disponible</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <!-- Sección Usuarios -->
+    <div class="section" id="usuarios">
+        <h2>Gestión de Usuarios</h2>
+        <!-- Formulario para agregar usuarios -->
+        <div class="form-group">
+            <input type="text" id="nuevoUsuarioNombre" placeholder="Nombre">
+            <input type="email" id="nuevoUsuarioEmail" placeholder="Email">
+            <button onclick="agregarNuevoUsuario()">Registrar Usuario</button>
+        </div>
+        <table id="tablaUsuarios">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Libros Prestados</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <!-- Sección Préstamos -->
+    <div class="section" id="prestamos">
+        <h2>Gestión de Préstamos</h2>
+        <!-- Formulario para manejar préstamos -->
+        <div class="form-group">
+            <select id="selectLibro">
+                <option value="">Seleccionar libro</option>
+                <!-- Los libros disponibles serán agregados aquí -->
+            </select>
+            <select id="selectUsuario">
+                <option value="">Seleccionar usuario</option>
+                <!-- Los usuarios registrados serán agregados aquí -->
+            </select>
+            <button onclick="realizarPrestamo()">Prestar Libro</button>
+        </div>
+        <table id="tablaPrestamos">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Libro</th>
+                    <th>Usuario</th>
+                    <th>Fecha Préstamo</th>
+                    <th>Fecha Devolución</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
