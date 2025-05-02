@@ -6,13 +6,13 @@ function Libro(id, titulo, autor, año) {
     this.año = año;
     this.disponible = true;
 
-    this.prestar = function() {
+    this.prestar = function () {
         this.disponible = false;
-    }
+    };
 
-    this.devolver = function() {
+    this.devolver = function () {
         this.disponible = true;
-    }
+    };
 }
 
 // 2. Constructor para Usuarios
@@ -22,12 +22,12 @@ function Usuario(id, nombre, email) {
     this.email = email;
     this.librosPrestados = [];
 
-    this.prestarLibro = function(libro) {
-        this.librosPrestados.push(libro);
+    this.prestarLibro = function(prestamo) {
+        this.librosPrestados.push(prestamo);
     };
 
-    this.devolverLibro = function(libro) {
-        this.librosPrestados = this.librosPrestados.filter(l => l.id !== libro.id);
+    this.devolverLibro = function(prestamoId) {
+        this.librosPrestados = this.librosPrestados.filter(p => p.id !== prestamoId);
     };
 }
 
@@ -37,10 +37,10 @@ function Prestamo(id, libroId, usuarioId, fechaPrestamo) {
     this.libroId = libroId;
     this.usuarioId = usuarioId;
     this.fechaPrestamo = fechaPrestamo;
-    this.fechaDevolucion = null;
     this.estado = "Prestado";
+    this.fechaDevolucion = null;
 
-    this.devolver = function() {
+    this.devolver = function () {
         this.estado = "Devuelto";
         this.fechaDevolucion = new Date().toISOString();
     };
@@ -55,22 +55,20 @@ const biblioteca = {
     nextUsuarioId: 1,
     nextPrestamoId: 1,
 
-    agregarLibro: function(titulo, autor, año) {
-        if (!titulo.trim() || !autor.trim() || isNaN(parseInt(año))) {
-            alert("Todos los campos del libro son obligatorios y el año debe ser un número.");
-            return null;
-        }
+    // Métodos para agregar elementos
     
-        const libro = new Libro(this.nextLibroId++, titulo.trim(), autor.trim(), parseInt(año));
+    agregarLibro: function(titulo, autor, año) {
+        const libro = new Libro(this.nextLibroId++, titulo, autor, año);
         this.libros.push(libro);
         return libro;
     },
 
     agregarUsuario: function(nombre, email) {
-        if (!nombre || !email) {
-            alert("Nombre y email son obligatorios.");
+        if (!/^\S+@\S+\.\S+$/.test(email)) {
+            alert("Email inválido");
             return null;
         }
+
         const usuario = new Usuario(this.nextUsuarioId++, nombre, email);
         this.usuarios.push(usuario);
         return usuario;
@@ -80,57 +78,61 @@ const biblioteca = {
         const libro = this.libros.find(l => l.id === libroId);
         const usuario = this.usuarios.find(u => u.id === usuarioId);
 
-        if (libro && libro.disponible && usuario) {
-            libro.prestar();
-            usuario.prestarLibro(libro);
-
-            const prestamo = new Prestamo(
-                this.nextPrestamoId++,
-                libroId,
-                usuarioId,
-                new Date().toISOString()
-            );
-
-            this.prestamos.push(prestamo);
-            return prestamo;
+        if (!libro || !usuario) return false;
+        if (!libro.disponible) {
+            alert("El libro no está disponible.");
+            return false;
         }
 
-        return null;
+        const prestamo = new Prestamo(this.nextPrestamoId++, libroId, usuarioId, new Date().toISOString());
+        libro.prestar();
+        usuario.prestarLibro(prestamo);
+        this.prestamos.push(prestamo);
+        return true;
     },
 
     devolverLibro: function(prestamoId) {
         const prestamo = this.prestamos.find(p => p.id === prestamoId && p.estado === "Prestado");
-        if (prestamo) {
-            const libro = this.libros.find(l => l.id === prestamo.libroId);
-            const usuario = this.usuarios.find(u => u.id === prestamo.usuarioId);
 
-            libro.devolver();
-            usuario.devolverLibro(libro);
-            prestamo.devolver();
-            return true;
-        }
-        return false;
+        if (!prestamo) return false;
+
+        const libro = this.libros.find(l => l.id === prestamo.libroId);
+        const usuario = this.usuarios.find(u => u.id === prestamo.usuarioId);
+
+        if (!libro || !usuario) return false;
+
+        libro.devolver();
+        usuario.devolverLibro(prestamoId);
+        prestamo.devolver();
+
+        return true;
     }
 };
 
-// Inicializar datos
+// Función para inicializar datos de ejemplo
+
 function init() {
+    // Agregar libros de ejemplo
     biblioteca.agregarLibro("Cien años de soledad", "Gabriel García Márquez", 1967);
     biblioteca.agregarLibro("1984", "George Orwell", 1949);
     biblioteca.agregarLibro("El Principito", "Antoine de Saint-Exupéry", 1943);
-
+    
+    // Agregar usuarios de ejemplo
     biblioteca.agregarUsuario("Ana López", "ana@email.com");
     biblioteca.agregarUsuario("Carlos Ruiz", "carlos@email.com");
-
+    
+    // Realizar algunos préstamos
     biblioteca.prestarLibro(1, 1);
     biblioteca.prestarLibro(2, 2);
-
+    
+    // Renderizar datos
     renderLibros();
     renderUsuarios();
     renderPrestamos();
 }
 
-// Renderizado de tablas
+// Funciones para renderizar las tablas (debes implementarlas)
+
 function renderLibros() {
     const tablaLibros = document.querySelector("#tablaLibros tbody");
     tablaLibros.innerHTML = '';
@@ -145,6 +147,7 @@ function renderLibros() {
             <td>${libro.disponible ? 'Sí' : 'No'}</td>
             <td>
                 <button onclick="eliminarLibro(${libro.id})">Eliminar</button>
+                <button onclick="prestarLibro(${libro.id})" ${!libro.disponible ? 'disabled' : ''}>Prestar</button>
             </td>
         `;
         tablaLibros.appendChild(fila);
@@ -177,6 +180,7 @@ function renderPrestamos() {
     biblioteca.prestamos.forEach(prestamo => {
         const libro = biblioteca.libros.find(l => l.id === prestamo.libroId);
         const usuario = biblioteca.usuarios.find(u => u.id === prestamo.usuarioId);
+        const fechaDevolucion = prestamo.estado === "Devuelto" ? prestamo.fechaDevolucion : 'N/A';
 
         const fila = document.createElement("tr");
         fila.innerHTML = `
@@ -184,37 +188,72 @@ function renderPrestamos() {
             <td>${libro.titulo}</td>
             <td>${usuario.nombre}</td>
             <td>${prestamo.fechaPrestamo}</td>
-            <td>${prestamo.fechaDevolucion || 'N/A'}</td>
+            <td>${fechaDevolucion}</td>
             <td>${prestamo.estado}</td>
             <td>
-                ${prestamo.estado === "Prestado"
-                    ? `<button onclick="devolverLibro(${prestamo.id})">Devolver</button>`
-                    : ''}
+                ${prestamo.estado === "Prestado" ? `<button onclick="devolverLibro(${prestamo.id})">Devolver</button>` : ''}
             </td>
         `;
         tablaPrestamos.appendChild(fila);
     });
 }
 
-// Funciones auxiliares
-function eliminarLibro(libroId) {
-    const estaPrestado = biblioteca.prestamos.some(p => p.libroId === libroId && p.estado === "Prestado");
-    if (estaPrestado) {
-        alert("No puedes eliminar un libro que está prestado.");
+
+// Acciones
+
+function agregarNuevoLibro() {
+    const titulo = document.getElementById("nuevoLibroTitulo").value.trim();
+    const autor = document.getElementById("nuevoLibroAutor").value.trim();
+    const año = parseInt(document.getElementById("nuevoLibroAño").value);
+
+    if (!titulo || !autor || isNaN(año)) {
+        alert("Todos los campos del libro son obligatorios.");
         return;
     }
-    biblioteca.libros = biblioteca.libros.filter(libro => libro.id !== libroId);
+
+    biblioteca.agregarLibro(titulo, autor, año);
     renderLibros();
+    renderSelects();
+
+    document.getElementById("nuevoLibroTitulo").value = "";
+    document.getElementById("nuevoLibroAutor").value = "";
+    document.getElementById("nuevoLibroAño").value = "";
 }
 
-function eliminarUsuario(id) {
-    const tienePrestamos = biblioteca.prestamos.some(p => p.usuarioId === id && p.estado === "Prestado");
-    if (tienePrestamos) {
-        alert("Este usuario no puede ser eliminado porque tiene libros prestados.");
+function agregarNuevoUsuario() {
+    const nombre = document.getElementById("nuevoUsuarioNombre").value.trim();
+    const email = document.getElementById("nuevoUsuarioEmail").value.trim();
+
+    if (!nombre || !email) {
+        alert("Todos los campos del usuario son obligatorios.");
         return;
     }
-    biblioteca.usuarios = biblioteca.usuarios.filter(u => u.id !== id);
-    renderUsuarios();
+
+    const nuevo = biblioteca.agregarUsuario(nombre, email);
+    if (nuevo) {
+        renderUsuarios();
+        renderSelects();
+        document.getElementById("nuevoUsuarioNombre").value = "";
+        document.getElementById("nuevoUsuarioEmail").value = "";
+    }
+}
+
+function realizarPrestamo() {
+    const libroId = parseInt(document.getElementById("selectLibro").value);
+    const usuarioId = parseInt(document.getElementById("selectUsuario").value);
+
+    if (isNaN(libroId) || isNaN(usuarioId)) {
+        alert("Debes seleccionar un libro y un usuario.");
+        return;
+    }
+
+    const exito = biblioteca.prestarLibro(libroId, usuarioId);
+    if (exito) {
+        renderLibros();
+        renderUsuarios();
+        renderPrestamos();
+        renderSelects();
+    }
 }
 
 function devolverLibro(prestamoId) {
@@ -223,43 +262,31 @@ function devolverLibro(prestamoId) {
         renderLibros();
         renderUsuarios();
         renderPrestamos();
-    } else {
-        alert("No se pudo devolver el libro.");
+        renderSelects();
     }
 }
 
-function esEmailValido(email) {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-}
-
-function agregarNuevoUsuario() {
-    const nombre = document.getElementById("nuevoUsuarioNombre").value;
-    const email = document.getElementById("nuevoUsuarioEmail").value;
-
-    if (!esEmailValido(email)) {
-        alert("Email inválido");
+function eliminarLibro(id) {
+    const enUso = biblioteca.prestamos.some(p => p.libroId === id && p.estado === "Prestado");
+    if (enUso) {
+        alert("Este libro está prestado y no se puede eliminar.");
         return;
     }
-
-    biblioteca.agregarUsuario(nombre, email);
-    renderUsuarios();
+    biblioteca.libros = biblioteca.libros.filter(l => l.id !== id);
+    renderLibros();
+    renderSelects();
 }
 
-function agregarNuevoLibro() {
-    const titulo = document.getElementById("nuevoLibroTitulo").value;
-    const autor = document.getElementById("nuevoLibroAutor").value;
-    const año = document.getElementById("nuevoLibroAño").value;
-
-    const libro = biblioteca.agregarLibro(titulo, autor, año);
-    if (libro) {
-        renderLibros();
-
-        // Limpiar campos
-        document.getElementById("nuevoLibroTitulo").value = "";
-        document.getElementById("nuevoLibroAutor").value = "";
-        document.getElementById("nuevoLibroAño").value = "";
+function eliminarUsuario(id) {
+    const usuario = biblioteca.usuarios.find(u => u.id === id);
+    if (usuario.librosPrestados.length > 0) {
+        alert("Este usuario tiene libros prestados y no se puede eliminar.");
+        return;
     }
+    biblioteca.usuarios = biblioteca.usuarios.filter(u => u.id !== id);
+    renderUsuarios();
+    renderSelects();
 }
 
+// Iniciar la aplicación
 window.onload = init;
